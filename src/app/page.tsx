@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, GlobalStats, LeaderboardModel } from '@/lib/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import Waves from '@/components/Waves';
 
 export default function LandingPage() {
   const [stats, setStats] = useState<GlobalStats | null>(null);
@@ -25,6 +26,19 @@ export default function LandingPage() {
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden">
+        <Waves
+          lineColor="rgba(99, 102, 241, 0.15)"
+          backgroundColor="transparent"
+          waveSpeedX={0.02}
+          waveSpeedY={0.01}
+          waveAmpX={40}
+          waveAmpY={20}
+          friction={0.9}
+          tension={0.01}
+          maxCursorMove={120}
+          xGap={12}
+          yGap={36}
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-green-950/20 to-transparent" />
         <div className="max-w-7xl mx-auto px-4 py-20 sm:py-32 text-center relative z-10">
           <h1 className="text-4xl sm:text-6xl font-bold text-white mb-6">
