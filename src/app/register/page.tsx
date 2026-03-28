@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Mail, Lock, User, ArrowRight, UserPlus, AlertCircle } from 'lucide-react';
 import { register, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -15,7 +21,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { setUser } = useAuth();
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: { preventDefault: () => void }) {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -36,75 +42,117 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 py-16">
-      <h1 className="text-3xl font-bold text-white mb-2">Create your account</h1>
-      <p className="text-gray-400 mb-8">Start using PropsLab in seconds. No credit card required.</p>
-
-      {error && (
-        <div className="bg-red-950/50 border border-red-800 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
-            Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
-            placeholder="Your name"
+    <div className="min-h-screen flex items-center justify-center px-4 py-16">
+      <div className="w-full max-w-sm mx-auto">
+        <div className="flex justify-center mb-8">
+          <Image
+            src="/logo-icon.png"
+            alt="PropsLab"
+            width={56}
+            height={56}
+            className="rounded-xl"
           />
         </div>
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
-            placeholder="you@example.com"
-          />
-        </div>
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={4}
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
-            placeholder="Min 8 characters"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-green-600 hover:bg-green-500 disabled:bg-green-800 disabled:cursor-not-allowed text-white py-2.5 rounded-lg font-medium transition-colors"
-        >
-          {loading ? 'Creating account...' : 'Create Account'}
-        </button>
-      </form>
 
-      <p className="text-sm text-gray-400 mt-6 text-center">
-        Already have an account?{' '}
-        <Link href="/login" className="text-green-400 hover:text-green-300">
-          Log in
-        </Link>
-      </p>
+        <Card>
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-2xl font-semibold text-foreground">
+              Create your account
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Start using PropsLab in seconds. No credit card required.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            {error && (
+              <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg mb-6 text-sm">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-foreground">
+                  Name
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder="Your name"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-foreground">
+                  Email
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="you@example.com"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-foreground">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={4}
+                    placeholder="Min 8 characters"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? (
+                  'Creating account...'
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Create Account
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <p className="text-sm text-muted-foreground mt-6 text-center">
+              Already have an account?{' '}
+              <Link
+                href="/login"
+                className="text-primary hover:text-primary/80 font-medium inline-flex items-center gap-1"
+              >
+                Log in
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

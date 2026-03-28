@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
-import { Inter, Geist } from 'next/font/google';
+import { DM_Sans } from 'next/font/google';
 import './globals.css';
 import ClientLayout from './client-layout';
-import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-
-const inter = Inter({ subsets: ['latin'] });
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  weight: ['400', '500', '600', '700'],
+});
 
 export const metadata: Metadata = {
   title: 'PropsLab - NBA Player Props Analytics',
@@ -19,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
-      <body className={inter.className}>
+    <html lang="en" className={dmSans.variable}>
+      <body className={dmSans.className}>
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

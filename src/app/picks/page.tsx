@@ -6,9 +6,22 @@ import { useAuth } from '@/lib/auth';
 import { api, Pick, ApiError } from '@/lib/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Target, Filter, Search, Calendar, ArrowRight, FlaskConical } from 'lucide-react';
 
 export default function PicksPage() {
-  const { loading: authLoading, isAuthenticated, isPro } = useAuth();
+  const { loading: authLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [picks, setPicks] = useState<Pick[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +38,7 @@ export default function PicksPage() {
       if (dateFrom) params.set('date_from', dateFrom);
       if (dateTo) params.set('date_to', dateTo);
       const query = params.toString() ? `?${params.toString()}` : '';
-      const data = await api<Pick[]>(`/picks/${query}`, { auth: true });
+      const data = await api<Pick[]>(`/picks/history${query}`, { auth: true });
       setPicks(data);
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
@@ -58,91 +71,125 @@ export default function PicksPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-white mb-6">Picks History</h1>
+      {/* Page Header */}
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+          <Target className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Picks History</h1>
+          <p className="text-sm text-muted-foreground">Browse and filter your historical picks</p>
+        </div>
+      </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Filter by stat (e.g. points)"
-          value={stat}
-          onChange={(e) => setStat(e.target.value)}
-          className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 text-sm"
-        />
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-green-500 text-sm"
-        />
-        <input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-green-500 text-sm"
-        />
-        <button
-          onClick={fetchPicks}
-          className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-        >
-          Apply
-        </button>
-      </div>
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative sm:w-56">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Filter by stat (e.g. points)"
+                value={stat}
+                onChange={(e) => setStat(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="relative sm:w-44">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="flex items-center text-muted-foreground">
+              <ArrowRight className="w-4 h-4 hidden sm:block" />
+            </div>
+            <div className="relative sm:w-44">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button onClick={fetchPicks} size="default">
+              <Filter className="w-4 h-4 mr-2" />
+              Apply
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {loading ? (
         <LoadingSpinner />
       ) : picks.length === 0 ? (
-        <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-8 text-center text-gray-400">
-          No picks match your filters.
-        </div>
+        <Card>
+          <CardContent className="p-8 text-center text-muted-foreground">
+            No picks match your filters.
+          </CardContent>
+        </Card>
       ) : (
-        <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-800 text-gray-400">
-                <th className="text-left px-4 py-3 font-medium">Player</th>
-                <th className="text-left px-4 py-3 font-medium">Game</th>
-                <th className="text-left px-4 py-3 font-medium">Prop</th>
-                <th className="text-right px-4 py-3 font-medium">Line</th>
-                <th className="text-right px-4 py-3 font-medium">Actual</th>
-                <th className="text-center px-4 py-3 font-medium">Result</th>
-                <th className="text-left px-4 py-3 font-medium">Model</th>
-              </tr>
-            </thead>
-            <tbody>
-              {picks.map((pick) => (
-                <tr key={pick.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
-                  <td className="px-4 py-3 text-white font-medium">{pick.player_name}</td>
-                  <td className="px-4 py-3 text-gray-400">{pick.game}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 text-xs rounded ${pick.direction === 'over' ? 'bg-green-900/50 text-green-400' : 'bg-red-900/50 text-red-400'}`}>
-                      {pick.direction.toUpperCase()}
-                    </span>
-                    <span className="ml-2 text-gray-300">{pick.stat}</span>
-                  </td>
-                  <td className="px-4 py-3 text-right text-white font-mono">{pick.line}</td>
-                  <td className="px-4 py-3 text-right text-gray-300 font-mono">
-                    {pick.actual_value != null ? pick.actual_value : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {pick.result ? (
-                      <span className={`px-2 py-0.5 text-xs rounded font-medium ${
-                        pick.result === 'win' ? 'bg-green-900/50 text-green-400' :
-                        pick.result === 'loss' ? 'bg-red-900/50 text-red-400' :
-                        'bg-gray-700 text-gray-400'
-                      }`}>
-                        {pick.result.toUpperCase()}
+        <Card>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Player</TableHead>
+                  <TableHead>Game</TableHead>
+                  <TableHead>Prop</TableHead>
+                  <TableHead className="text-right">Line</TableHead>
+                  <TableHead className="text-right">Actual</TableHead>
+                  <TableHead className="text-center">Result</TableHead>
+                  <TableHead>Model</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {picks.map((pick) => (
+                  <TableRow key={pick.id}>
+                    <TableCell className="font-medium text-foreground">{pick.player_name}</TableCell>
+                    <TableCell className="text-muted-foreground">{pick.game}</TableCell>
+                    <TableCell>
+                      <Badge variant={pick.direction === 'over' ? 'default' : 'destructive'} className="mr-2">
+                        {pick.direction.toUpperCase()}
+                      </Badge>
+                      <span className="text-muted-foreground">{pick.stat}</span>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{pick.line}</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">
+                      {pick.actual_value != null ? pick.actual_value : '-'}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {pick.result ? (
+                        <Badge
+                          variant={
+                            pick.result === 'win' ? 'default' :
+                            pick.result === 'loss' ? 'destructive' :
+                            'secondary'
+                          }
+                        >
+                          {pick.result.toUpperCase()}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                        <FlaskConical className="w-3.5 h-3.5" />
+                        {pick.model_name}
                       </span>
-                    ) : (
-                      <span className="text-gray-500">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-400">{pick.model_name}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       )}
     </div>
   );

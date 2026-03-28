@@ -1,10 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api, GlobalStats, LeaderboardModel } from '@/lib/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Waves from '@/components/Waves';
+import { buttonVariants } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 
 export default function LandingPage() {
   const [stats, setStats] = useState<GlobalStats | null>(null);
@@ -17,48 +29,59 @@ export default function LandingPage() {
       api<LeaderboardModel[]>('/leaderboard/'),
     ]).then(([statsRes, leadersRes]) => {
       if (statsRes.status === 'fulfilled') setStats(statsRes.value);
-      if (leadersRes.status === 'fulfilled') setLeaders(leadersRes.value.slice(0, 5));
+      if (leadersRes.status === 'fulfilled') setLeaders(leadersRes.value);
       setLoading(false);
     });
   }, []);
 
+  const statTypes = useMemo(() => {
+    const unique = Array.from(new Set(leaders.map((m) => m.stat)));
+    return unique.sort();
+  }, [leaders]);
+
+  const filteredLeaders = (stat: string) =>
+    stat === 'all'
+      ? leaders.slice(0, 8)
+      : leaders.filter((m) => m.stat === stat).slice(0, 8);
+
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden border-b">
         <Waves
-          lineColor="rgba(99, 102, 241, 0.15)"
+          lineColor="rgba(59, 130, 246, 0.05)"
           backgroundColor="transparent"
-          waveSpeedX={0.02}
-          waveSpeedY={0.01}
-          waveAmpX={40}
-          waveAmpY={20}
-          friction={0.9}
-          tension={0.01}
-          maxCursorMove={120}
-          xGap={12}
-          yGap={36}
+          waveSpeedX={0.012}
+          waveSpeedY={0.006}
+          waveAmpX={25}
+          waveAmpY={12}
+          friction={0.93}
+          tension={0.006}
+          maxCursorMove={80}
+          xGap={16}
+          yGap={44}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-green-950/20 to-transparent" />
-        <div className="max-w-7xl mx-auto px-4 py-20 sm:py-32 text-center relative z-10">
-          <h1 className="text-4xl sm:text-6xl font-bold text-white mb-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-16 pb-14 sm:pt-24 sm:pb-20 relative z-10">
+          <div className="flex items-center gap-2.5 mb-8">
+            <Image src="/logo-icon.png" alt="PropsLab" width={32} height={32} className="rounded-lg" />
+            <span className="text-[13px] font-semibold text-muted-foreground tracking-widest uppercase">PropsLab</span>
+          </div>
+
+          <h1 className="text-[2.5rem] sm:text-5xl md:text-[3.25rem] font-bold tracking-[-0.02em] text-foreground leading-[1.1] mb-4">
             NBA Player Props,{' '}
-            <span className="text-green-400">Backed by Data</span>
+            <span className="text-primary">Backed by Data</span>
           </h1>
-          <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10">
-            AI-powered models with full backtest transparency. See the edge before you bet.
+
+          <p className="text-[17px] text-muted-foreground max-w-lg mb-8">
+            AI-powered prediction models with full backtest transparency. See the edge before you bet.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/register"
-              className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-lg font-medium text-lg transition-colors"
-            >
+
+          <div className="flex items-center gap-3">
+            <Link href="/register" className={buttonVariants() + ' h-10 px-5 gap-2'}>
               Get Started Free
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
-            <Link
-              href="/leaderboard"
-              className="border border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white px-8 py-3 rounded-lg font-medium text-lg transition-colors"
-            >
+            <Link href="/leaderboard" className={buttonVariants({ variant: 'outline' }) + ' h-10 px-5'}>
               View Leaderboard
             </Link>
           </div>
@@ -69,108 +92,159 @@ export default function LandingPage() {
       {loading ? (
         <LoadingSpinner />
       ) : stats ? (
-        <section className="max-w-7xl mx-auto px-4 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6" data-testid="global-stats">
-            <StatCard label="Total Picks" value={stats.total_picks.toLocaleString()} />
-            <StatCard label="Models" value={stats.active_models.toString()} />
-            <StatCard label="Avg ROI" value={`${(stats.avg_model_roi_net * 100).toFixed(1)}%`} highlight />
-            <StatCard label="Win Rate" value={`${(stats.win_rate * 100).toFixed(1)}%`} />
+        <section className="border-b" data-testid="global-stats">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x">
+              <Stat value={stats.total_picks.toLocaleString()} label="Picks Tracked" />
+              <Stat value={stats.active_models.toString()} label="Active Models" />
+              <Stat value={`${(stats.avg_model_roi_net * 100).toFixed(1)}%`} label="Avg ROI" accent={stats.avg_model_roi_net >= 0} />
+              <Stat value={`${(stats.win_rate * 100).toFixed(1)}%`} label="Win Rate" />
+            </div>
           </div>
         </section>
       ) : null}
 
-      {/* Leaderboard Preview */}
+      {/* Leaderboard with Tabs */}
       {leaders.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Top Models</h2>
-            <Link href="/leaderboard" className="text-green-400 hover:text-green-300 text-sm">
-              View All &rarr;
-            </Link>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden">
-            <table className="w-full text-sm" data-testid="leaderboard-preview">
-              <thead>
-                <tr className="border-b border-gray-800 text-gray-400">
-                  <th className="text-left px-4 py-3 font-medium">#</th>
-                  <th className="text-left px-4 py-3 font-medium">Model</th>
-                  <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Stat</th>
-                  <th className="text-right px-4 py-3 font-medium">ROI</th>
-                  <th className="text-right px-4 py-3 font-medium">Win Rate</th>
-                  <th className="text-right px-4 py-3 font-medium hidden sm:table-cell">Bets</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaders.map((m, i) => (
-                  <tr key={m.name} className="border-b border-gray-800/50 hover:bg-gray-800/30">
-                    <td className="px-4 py-3 text-gray-500">{i + 1}</td>
-                    <td className="px-4 py-3 text-white font-medium">{m.display_name}</td>
-                    <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{m.stat}</td>
-                    <td className={`px-4 py-3 text-right font-mono ${m.roi_net >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {(m.roi_net * 100).toFixed(1)}%
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-gray-300">
-                      {(m.win_rate * 100).toFixed(1)}%
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-400 hidden sm:table-cell">{m.total_bets}</td>
-                  </tr>
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
+          <Tabs defaultValue="all">
+            <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground tracking-tight">Model Leaderboard</h2>
+                <p className="text-[13px] text-muted-foreground mt-0.5">Ranked by backtested net ROI</p>
+              </div>
+              <TabsList variant="line" className="h-auto">
+                <TabsTrigger value="all" className="text-[13px] px-2.5 pb-2">All</TabsTrigger>
+                {statTypes.slice(0, 6).map((stat) => (
+                  <TabsTrigger key={stat} value={stat} className="text-[13px] px-2.5 pb-2">{stat}</TabsTrigger>
                 ))}
-              </tbody>
-            </table>
+              </TabsList>
+            </div>
+
+            <TabsContent value="all">
+              <LeaderboardTable models={filteredLeaders('all')} />
+            </TabsContent>
+            {statTypes.slice(0, 6).map((stat) => (
+              <TabsContent key={stat} value={stat}>
+                <LeaderboardTable models={filteredLeaders(stat)} />
+              </TabsContent>
+            ))}
+          </Tabs>
+
+          <div className="mt-4 text-right">
+            <Link
+              href="/leaderboard"
+              className="text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+            >
+              View full leaderboard
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
           </div>
         </section>
       )}
 
-      {/* Features */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-2xl font-bold text-white text-center mb-12">Why PropsLab?</h2>
-        <div className="grid md:grid-cols-3 gap-8">
-          <FeatureCard
-            title="Backtested Models"
-            description="Every model is backtested with full transparency. See historical ROI, win rates, and p-values."
-          />
-          <FeatureCard
-            title="Paper Trading"
-            description="Track picks without risking real money. Build confidence in the models before committing."
-          />
-          <FeatureCard
-            title="Real-Time Picks"
-            description="Get today's highest-confidence picks delivered before game time, every day."
-          />
+      {/* How it works */}
+      <section className="border-y bg-muted/30">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
+          <h2 className="text-xl font-semibold text-foreground tracking-tight mb-8">How it works</h2>
+          <div className="grid sm:grid-cols-3 gap-6 sm:gap-10">
+            {[
+              {
+                step: '01',
+                title: 'Backtested Models',
+                desc: 'Every model is walk-forward backtested. Full history — ROI, win rate, p-value — before you follow a single pick.',
+              },
+              {
+                step: '02',
+                title: 'Paper Trading',
+                desc: 'Track model picks without risking money. Build conviction with simulated P&L before committing real capital.',
+              },
+              {
+                step: '03',
+                title: 'Daily Picks',
+                desc: 'Highest-confidence picks before game time. Every pick shows the model, stat line, and confidence score.',
+              },
+            ].map((item) => (
+              <div key={item.step}>
+                <span className="text-xs font-mono font-medium text-primary/60">{item.step}</span>
+                <h3 className="font-medium text-foreground mt-1 mb-1.5">{item.title}</h3>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <h2 className="text-3xl font-bold text-white mb-4">Ready to find your edge?</h2>
-        <p className="text-gray-400 mb-8">Join PropsLab and start paper trading today. No credit card required.</p>
-        <Link
-          href="/register"
-          className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-lg font-medium text-lg transition-colors"
-        >
-          Create Free Account
-        </Link>
+      <section>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-14 sm:py-16 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground tracking-tight">Ready to find your edge?</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">Free to start. No credit card required.</p>
+          </div>
+          <Link href="/register" className={buttonVariants() + ' h-10 px-5 gap-2 shrink-0'}>
+            Create Free Account
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </section>
     </div>
   );
 }
 
-function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function LeaderboardTable({ models }: { models: readonly LeaderboardModel[] }) {
+  if (models.length === 0) {
+    return <p className="text-sm text-muted-foreground py-8 text-center">No models in this category yet.</p>;
+  }
   return (
-    <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 text-center">
-      <div className={`text-2xl sm:text-3xl font-bold mb-1 ${highlight ? 'text-green-400' : 'text-white'}`}>
-        {value}
-      </div>
-      <div className="text-sm text-gray-400">{label}</div>
+    <div className="border rounded-lg overflow-hidden" data-testid="leaderboard-preview">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/40 hover:bg-muted/40">
+            <TableHead className="w-10 text-center">#</TableHead>
+            <TableHead>Model</TableHead>
+            <TableHead className="hidden sm:table-cell">Stat</TableHead>
+            <TableHead className="text-right">ROI</TableHead>
+            <TableHead className="text-right hidden sm:table-cell">Win Rate</TableHead>
+            <TableHead className="text-right hidden sm:table-cell">Bets</TableHead>
+            <TableHead className="text-right">P-Value</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {models.map((m, i) => (
+            <TableRow key={m.name}>
+              <TableCell className="text-center text-muted-foreground tabular-nums text-[13px]">{i + 1}</TableCell>
+              <TableCell className="font-medium text-[13px]">{m.display_name}</TableCell>
+              <TableCell className="hidden sm:table-cell">
+                <span className="text-[11px] font-medium text-muted-foreground bg-muted rounded px-1.5 py-0.5">{m.stat}</span>
+              </TableCell>
+              <TableCell className={`text-right font-mono text-[13px] font-semibold tabular-nums ${m.roi_net >= 0 ? 'text-positive' : 'text-negative'}`}>
+                {m.roi_net >= 0 ? '+' : ''}{(m.roi_net * 100).toFixed(1)}%
+              </TableCell>
+              <TableCell className="text-right font-mono text-[13px] text-muted-foreground hidden sm:table-cell tabular-nums">
+                {(m.win_rate * 100).toFixed(1)}%
+              </TableCell>
+              <TableCell className="text-right text-[13px] text-muted-foreground hidden sm:table-cell tabular-nums">
+                {m.total_bets}
+              </TableCell>
+              <TableCell className={`text-right font-mono text-[13px] tabular-nums ${m.p_value < 0.05 ? 'text-positive' : 'text-muted-foreground'}`}>
+                {m.p_value < 0.001 ? '<0.001' : m.p_value.toFixed(3)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
 
-function FeatureCard({ title, description }: { title: string; description: string }) {
+function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
   return (
-    <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
-      <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-      <p className="text-gray-400 text-sm">{description}</p>
+    <div className="py-4 px-4 sm:px-6 text-center">
+      <div className={`text-lg sm:text-xl font-semibold tracking-tight tabular-nums ${accent ? 'text-positive' : 'text-foreground'}`}>
+        {value}
+      </div>
+      <div className="text-[11px] text-muted-foreground mt-0.5 font-medium uppercase tracking-wider">{label}</div>
     </div>
   );
 }

@@ -5,6 +5,26 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { api, PaperTrade, PaperTradeStats, Pick } from '@/lib/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { TrendingUp, DollarSign, Target, Percent, Activity, Plus, Clock } from 'lucide-react';
+
+const STAT_ICONS = [
+  { icon: Activity, label: 'Total Trades', bg: 'bg-primary/10', fg: 'text-primary' },
+  { icon: DollarSign, label: 'P&L', bg: 'bg-emerald-500/10', fg: 'text-emerald-500' },
+  { icon: Percent, label: 'ROI', bg: 'bg-blue-500/10', fg: 'text-blue-500' },
+  { icon: Target, label: 'Win Rate', bg: 'bg-amber-500/10', fg: 'text-amber-500' },
+] as const;
 
 export default function PaperTradesPage() {
   const { loading: authLoading, isAuthenticated } = useAuth();
@@ -42,7 +62,6 @@ export default function PaperTradesPage() {
       });
       setTrades([trade, ...trades]);
       setSelectedPick('');
-      // Refresh stats
       const newStats = await api<PaperTradeStats>('/paper-trades/stats', { auth: true });
       setStats(newStats);
     } catch {
@@ -54,133 +73,176 @@ export default function PaperTradesPage() {
 
   if (authLoading) return <LoadingSpinner />;
 
+  function getStatValues(s: PaperTradeStats) {
+    return [
+      { value: s.total_trades.toString(), color: 'text-foreground' },
+      {
+        value: `${s.total_pnl >= 0 ? '+' : ''}$${s.total_pnl.toFixed(2)}`,
+        color: s.total_pnl >= 0 ? 'text-positive' : 'text-negative',
+      },
+      {
+        value: `${(s.roi * 100).toFixed(1)}%`,
+        color: s.roi >= 0 ? 'text-positive' : 'text-negative',
+      },
+      { value: `${(s.win_rate * 100).toFixed(1)}%`, color: 'text-foreground' },
+    ];
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-white mb-6">Paper Trades</h1>
+      {/* Page Header */}
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+          <TrendingUp className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Paper Trades</h1>
+          <p className="text-sm text-muted-foreground">Track your simulated trading performance</p>
+        </div>
+      </div>
 
       {loading ? (
         <LoadingSpinner />
       ) : (
         <div className="space-y-8">
-          {/* Stats */}
+          {/* Stats Grid */}
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatBox label="Total Trades" value={stats.total_trades.toString()} />
-              <StatBox
-                label="P&L"
-                value={`${stats.total_pnl >= 0 ? '+' : ''}$${stats.total_pnl.toFixed(2)}`}
-                color={stats.total_pnl >= 0 ? 'text-green-400' : 'text-red-400'}
-              />
-              <StatBox
-                label="ROI"
-                value={`${(stats.roi * 100).toFixed(1)}%`}
-                color={stats.roi >= 0 ? 'text-green-400' : 'text-red-400'}
-              />
-              <StatBox label="Win Rate" value={`${(stats.win_rate * 100).toFixed(1)}%`} />
+              {STAT_ICONS.map((item, idx) => {
+                const values = getStatValues(stats);
+                const Icon = item.icon;
+                return (
+                  <Card key={item.label}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full ${item.bg} flex items-center justify-center`}>
+                          <Icon className={`w-5 h-5 ${item.fg}`} />
+                        </div>
+                        <div>
+                          <div className={`text-xl font-bold font-mono ${values[idx].color}`}>
+                            {values[idx].value}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{item.label}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
 
           {/* Create Trade */}
           {todayPicks.length > 0 && (
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4">Place Paper Trade</h2>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <select
-                  value={selectedPick}
-                  onChange={(e) => setSelectedPick(e.target.value)}
-                  className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-green-500 text-sm"
-                >
-                  <option value="">Select a pick...</option>
-                  {todayPicks.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.player_name} - {p.direction.toUpperCase()} {p.line} {p.stat}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  value={stake}
-                  onChange={(e) => setStake(e.target.value)}
-                  min="1"
-                  className="w-32 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-green-500 text-sm"
-                  placeholder="Stake $"
-                />
-                <button
-                  onClick={createTrade}
-                  disabled={creating || !selectedPick}
-                  className="bg-green-600 hover:bg-green-500 disabled:bg-green-800 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                >
-                  {creating ? 'Placing...' : 'Place Trade'}
-                </button>
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-primary" />
+                  Place Paper Trade
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <select
+                    value={selectedPick}
+                    onChange={(e) => setSelectedPick(e.target.value)}
+                    className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Select a pick...</option>
+                    {todayPicks.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.player_name} - {p.direction.toUpperCase()} {p.line} {p.stat}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="relative w-36">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      value={stake}
+                      onChange={(e) => setStake(e.target.value)}
+                      min="1"
+                      className="pl-9"
+                      placeholder="Stake"
+                    />
+                  </div>
+                  <Button
+                    onClick={createTrade}
+                    disabled={creating || !selectedPick}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {creating ? 'Placing...' : 'Place Trade'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Trade History */}
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4">Trade History</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="w-5 h-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-foreground">Trade History</h2>
+            </div>
             {trades.length === 0 ? (
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-8 text-center text-gray-400">
-                No paper trades yet. Place your first trade above.
-              </div>
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  No paper trades yet. Place your first trade above.
+                </CardContent>
+              </Card>
             ) : (
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-800 text-gray-400">
-                      <th className="text-left px-4 py-3 font-medium">Date</th>
-                      <th className="text-right px-4 py-3 font-medium">Stake</th>
-                      <th className="text-right px-4 py-3 font-medium">Odds</th>
-                      <th className="text-center px-4 py-3 font-medium">Result</th>
-                      <th className="text-right px-4 py-3 font-medium">P&L</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {trades.map((t) => (
-                      <tr key={t.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
-                        <td className="px-4 py-3 text-gray-400">
-                          {new Date(t.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 text-right text-white font-mono">${t.stake.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right text-gray-300 font-mono">
-                          {t.odds > 0 ? `+${t.odds}` : t.odds}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {t.result ? (
-                            <span className={`px-2 py-0.5 text-xs rounded font-medium ${
-                              t.result === 'win' ? 'bg-green-900/50 text-green-400' :
-                              t.result === 'loss' ? 'bg-red-900/50 text-red-400' :
-                              'bg-gray-700 text-gray-400'
-                            }`}>
-                              {t.result.toUpperCase()}
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 text-xs rounded bg-yellow-900/50 text-yellow-400">PENDING</span>
-                          )}
-                        </td>
-                        <td className={`px-4 py-3 text-right font-mono ${
-                          t.pnl != null ? (t.pnl >= 0 ? 'text-green-400' : 'text-red-400') : 'text-gray-500'
-                        }`}>
-                          {t.pnl != null ? `${t.pnl >= 0 ? '+' : ''}$${t.pnl.toFixed(2)}` : '-'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Card>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Stake</TableHead>
+                        <TableHead className="text-right">Odds</TableHead>
+                        <TableHead className="text-center">Result</TableHead>
+                        <TableHead className="text-right">P&L</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {trades.map((t) => (
+                        <TableRow key={t.id}>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(t.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono">${t.stake.toFixed(2)}</TableCell>
+                          <TableCell className="text-right font-mono text-muted-foreground">
+                            {t.odds > 0 ? `+${t.odds}` : t.odds}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {t.result ? (
+                              <Badge
+                                variant={
+                                  t.result === 'win' ? 'default' :
+                                  t.result === 'loss' ? 'destructive' :
+                                  'secondary'
+                                }
+                              >
+                                {t.result.toUpperCase()}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">PENDING</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className={`text-right font-mono ${
+                            t.pnl != null ? (t.pnl >= 0 ? 'text-positive' : 'text-negative') : 'text-muted-foreground'
+                          }`}>
+                            {t.pnl != null ? `${t.pnl >= 0 ? '+' : ''}$${t.pnl.toFixed(2)}` : '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
             )}
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function StatBox({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-      <div className={`text-xl font-bold font-mono ${color || 'text-white'}`}>{value}</div>
-      <div className="text-xs text-gray-400 mt-1">{label}</div>
     </div>
   );
 }
